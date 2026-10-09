@@ -52,7 +52,7 @@ h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; margin
 .tab .n { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; margin-left: 6px; }
 .tab[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .tab[aria-current="page"] .n { color: var(--accent-ink); }
-#viewRegister { display: grid; gap: 24px; max-width: 560px; }
+#viewRegister { display: grid; gap: 24px; max-width: 560px; width: 100%; margin-inline: auto; }
 .scroll { overflow-x: auto; }
 table { width: 100%; min-width: 720px; border-collapse: collapse; table-layout: fixed; font-size: 14px; }
 th, td { text-align: left; padding: 8px 12px; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
@@ -113,7 +113,7 @@ textarea { resize: vertical; min-height: 60px; }
 .row.editing { background: var(--accent-soft); }
 .empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 6px; padding: 32px 20px; text-align: center; color: var(--muted); }
 .empty strong { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
-.panel.narrow { max-width: 420px; display: grid; gap: 12px; }
+.panel.narrow { max-width: 420px; width: 100%; margin-inline: auto; display: grid; gap: 12px; }
 .panel.narrow h2 { margin: 0; }
 .tabs { align-items: center; }
 .msg { font-size: 13px; min-height: 1.6em; margin: 0; color: var(--accent); }
