@@ -1,4 +1,4 @@
-/* 大学・団体名簿：画面の動き。データは Supabase に保存します（設定は config.js）。 */
+/* Giving Campaignリスト：画面の動き。データは Supabase に保存します（設定は config.js）。 */
 (function () {
   "use strict";
   var REGIONS = [
