@@ -93,7 +93,7 @@
   var initialView = location.hash === "#list" ? "list" : "register";
   var dupCounts = {};
   var initialSort = "region";
-  try { var sv = localStorage.getItem("meibo-sort"); if (sv === "created" || sv === "kana" || sv === "vote") initialSort = sv; } catch (e) {}
+  try { var sv = localStorage.getItem("meibo-sort"); if (sv === "created" || sv === "kana" || sv === "vote" || sv === "nvote") initialSort = sv; } catch (e) {}
   var state = { sort: initialSort, view: initialView, user: null, loaded: false, entries: [], region: "", q: "",
                 editingId: null, confirmId: null, busy: false, failed: false };
 
@@ -221,7 +221,9 @@
       return;
     }
     var shown = state.entries.filter(matches);
-    if (!shown.length) {
+    var voted = shown.filter(function (e) { return e.voted; });
+    shown = shown.filter(function (e) { return !e.voted; });
+    if (!shown.length && !voted.length) {
       groupsEl.appendChild(el("div", "empty", "条件に合う登録がありません。検索語や地域を変えてみてください。"));
       return;
     }
@@ -229,16 +231,22 @@
       REGIONS.forEach(function (r) {
         var rows = shown.filter(function (e) { return regionOf(e) === r[0]; });
         if (!rows.length) return;
-        rows.sort(function (a, b) { return (PREF_ORDER[a.pref] - PREF_ORDER[b.pref]) || byKana(a, b); });
-        groupsEl.appendChild(sectionEl(r[0], rows));
+        groupsEl.appendChild(sectionEl(r[0], rows.sort(sorter())));
       });
-    } else {
-      var all = shown.slice();
-      if (state.sort === "kana") all.sort(byKana);
-      else if (state.sort === "vote") all.sort(byVote);
-      else all.sort(function (a, b) { return String(b.created_at).localeCompare(String(a.created_at)); });
-      groupsEl.appendChild(sectionEl(SORT_TITLE[state.sort] || SORT_TITLE.created, all));
+    } else if (shown.length) {
+      groupsEl.appendChild(sectionEl(SORT_TITLE[state.sort] || SORT_TITLE.created, shown.sort(sorter())));
     }
+    // 投票済みにチェックしたものは、最後の「投票済み」にまとめる
+    if (voted.length) groupsEl.appendChild(sectionEl("投票済み", voted.sort(sorter()), "voted"));
+  }
+
+  // 今の並べ替えに合わせた比べ方
+  function sorter() {
+    if (state.sort === "region") return function (a, b) { return (PREF_ORDER[a.pref] - PREF_ORDER[b.pref]) || byKana(a, b); };
+    if (state.sort === "kana") return byKana;
+    if (state.sort === "vote") return byVote;
+    if (state.sort === "nvote") return byNVote;
+    return function (a, b) { return String(b.created_at).localeCompare(String(a.created_at)); };
   }
 
   // 五十音順：大学名の文字で比べる（漢字は読みではなく文字の順）。大学名なしは最後。
@@ -248,7 +256,12 @@
     return (!a.vote_date - !b.vote_date) || a.vote_date.localeCompare(b.vote_date) ||
            (!a.vote_time - !b.vote_time) || a.vote_time.localeCompare(b.vote_time) || byKana(a, b);
   }
-  var SORT_TITLE = { created: "登録順（新しい順）", kana: "五十音順", vote: "投票日順（早い順）" };
+  // Nociws投票日順：Nociws側の投票日が早い順。同じ日は時間の早い順。未入力のものは最後。
+  function byNVote(a, b) {
+    return (!a.n_vote_date - !b.n_vote_date) || a.n_vote_date.localeCompare(b.n_vote_date) ||
+           (!a.n_vote_time - !b.n_vote_time) || a.n_vote_time.localeCompare(b.n_vote_time) || byKana(a, b);
+  }
+  var SORT_TITLE = { created: "登録順（新しい順）", kana: "五十音順", vote: "投票日順（早い順）", nvote: "Nociws投票日順（早い順）" };
   function byKana(a, b) {
     return (!a.univ - !b.univ) || sortKey(a).localeCompare(sortKey(b), "ja") || a.org.localeCompare(b.org, "ja");
   }
@@ -257,13 +270,13 @@
   function isDup(e) { return !!e.univ && dupCounts[normUniv(e.univ)] > 1; }
   function dupBadge() { return el("span", "badge-dup", "重複"); }
 
-  function sectionEl(title, rows) {
-    var sec = el("section", "region");
+  function sectionEl(title, rows, cls) {
+    var sec = el("section", "region" + (cls ? " " + cls : ""));
     var h = el("h3", null, title);
     h.appendChild(el("span", "n", rows.length + "件"));
     sec.appendChild(h);
     var table = el("table"), thead = el("thead"), hr = el("tr"), tbody = el("tbody");
-    [["大学名"], ["団体名"], ["都道府県"], ["連絡手段"], ["投票日"], ["投票時間"], ["応援コメント"], ["返信確認"],
+    [["投票済み"], ["大学名"], ["団体名"], ["都道府県"], ["連絡手段"], ["投票日"], ["投票時間"], ["応援コメント"], ["返信確認"],
      ["Nociws 投票日", "nz"], ["Nociws 投票時間"], ["Nociws 応援コメント"], ["メモ"], ["操作"]]
       .forEach(function (c) { var th = el("th", c[1], c[0]); th.scope = "col"; hr.appendChild(th); });
     thead.appendChild(hr); table.appendChild(thead);
@@ -275,6 +288,11 @@
 
   function trEl(e) {
     var tr = el("tr");
+    var tv = el("td", "t-voted"), cb = el("input");
+    cb.type = "checkbox"; cb.checked = e.voted;
+    cb.setAttribute("aria-label", (e.univ || e.org || NO_UNIV) + " を投票済みにする");
+    cb.addEventListener("change", function () { setVoted(e, cb.checked); });
+    tv.appendChild(cb); tr.appendChild(tv);
     var tu = el("td", "t-univ wide" + (isDup(e) ? " dup" : ""), e.univ || NO_UNIV);
     if (isDup(e)) tu.appendChild(dupBadge());
     tr.appendChild(tu);
@@ -339,7 +357,7 @@
                    vote_date: String(v.vote_date || ""), vote_time: String(v.vote_time || ""),
                    comment: String(v.comment || ""), reply: v.reply === "done" ? "done" : "pending",
                    n_vote_date: String(v.n_vote_date || ""), n_vote_time: String(v.n_vote_time || ""),
-                   n_comment: String(v.n_comment || "") };
+                   n_comment: String(v.n_comment || ""), voted: v.voted === true };
         });
         state.failed = false; state.loaded = true;
         statusEl.textContent = "全 " + state.entries.length + " 件";
@@ -403,6 +421,19 @@
       setMsg(editing ? "更新しました。" : "登録しました。");
       if (editing) setView("list"); else fUniv.focus();
       load();
+    }, fail);
+  }
+
+  // 一覧のチェックボックス：先に画面を切り替え、保存に失敗したら元に戻す
+  function setVoted(e, on) {
+    if (!store.ready() || !state.user) return;
+    e.voted = on; render();
+    var fail = function () {
+      e.voted = !on; render();
+      statusEl.textContent = "投票済みを保存できませんでした。setup.sql を Supabase で実行し直したか確かめてください。";
+    };
+    store.update(e.id, { voted: on, updated_at: new Date().toISOString() }).then(function (res) {
+      if (res.error) fail();
     }, fail);
   }
 

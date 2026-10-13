@@ -31,6 +31,7 @@ alter table public.entries add column if not exists reply        text not null d
 alter table public.entries add column if not exists n_vote_date  text not null default '' check (char_length(n_vote_date) <= 10);
 alter table public.entries add column if not exists n_vote_time  text not null default '' check (char_length(n_vote_time) <= 8);
 alter table public.entries add column if not exists n_comment    text not null default '' check (n_comment in ('', '◯', '✕'));
+alter table public.entries add column if not exists voted        boolean not null default false;
 
 -- 行レベルセキュリティを有効にする（これが無いと誰でも読めてしまいます）
 alter table public.entries enable row level security;
