@@ -93,7 +93,7 @@
   };
 
   var initialView = location.hash === "#list" ? "list" : "register";
-  var dupCounts = {};
+  var dupCounts = {}, unionCount = 0;
   var initialSort = "region";
   try { var sv = localStorage.getItem("meibo-sort"); if (sv === "created" || sv === "kana" || sv === "vote" || sv === "nvote") initialSort = sv; } catch (e) {}
   var state = { sort: initialSort, view: initialView, user: null, loaded: false, entries: [], region: "", q: "",
@@ -178,6 +178,7 @@
     state.entries.forEach(function (e) {
       if (e.univ) { var k = normUniv(e.univ); dupCounts[k] = (dupCounts[k] || 0) + 1; }
     });
+    unionCount = state.entries.filter(function (e) { return e.student_union; }).length;
     Array.prototype.forEach.call(document.querySelectorAll("#sortChips button"), function (b) {
       b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort));
     });
@@ -297,6 +298,8 @@
     tv.appendChild(cb); tr.appendChild(tv);
     var tu = el("td", "t-univ wide" + (isDup(e) ? " dup" : ""), e.univ || NO_UNIV);
     if (isDup(e)) tu.appendChild(dupBadge());
+    // 学生連合にチェックした登録が2件以上あるときは、その行の大学名の下に警告を出す
+    if (e.student_union && unionCount >= 2) tu.appendChild(el("span", "union-warn", "学生連合は既に登録されています"));
     tr.appendChild(tu);
     tr.appendChild(el("td", "wide", e.org));
     tr.appendChild(el("td", "t-pref", e.pref));
