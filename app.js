@@ -27,6 +27,7 @@
   var fNoUniv = $("fNoUniv"), fContactOther = $("fContactOther"),
       fVoteDate = $("fVoteDate"), fVoteTime = $("fVoteTime"), fComment = $("fComment"), fReply = $("fReply"),
       fNVoteDate = $("fNVoteDate"), fNVoteTime = $("fNVoteTime"), fNComment = $("fNComment");
+  var fUnion = $("fUnion");
   var NO_UNIV = "その他（大学名なし）";
   var CONTACTS = ["X", "Instagram", "CrossCampus"];
 
@@ -42,6 +43,7 @@
     if (fNoUniv.checked) fUniv.value = "";
     $("contactOtherWrap").hidden = fContact.value !== "__other";
     if (typeof showDupHint === "function") showDupHint();
+    if (typeof showUnionHint === "function") showUnionHint();
   }
 
   // ---- 設定の確認 ----
@@ -357,10 +359,12 @@
                    vote_date: String(v.vote_date || ""), vote_time: String(v.vote_time || ""),
                    comment: String(v.comment || ""), reply: v.reply === "done" ? "done" : "pending",
                    n_vote_date: String(v.n_vote_date || ""), n_vote_time: String(v.n_vote_time || ""),
-                   n_comment: String(v.n_comment || ""), voted: v.voted === true };
+                   n_comment: String(v.n_comment || ""), voted: v.voted === true,
+                   student_union: v.student_union === true };
         });
         state.failed = false; state.loaded = true;
         statusEl.textContent = "全 " + state.entries.length + " 件";
+        showUnionHint();
       }
       render();
     }, function () {
@@ -380,6 +384,7 @@
     fComment.value = e.comment; fReply.value = e.reply;
     fNVoteDate.value = e.n_vote_date; fNVoteTime.value = fmtTime(e.n_vote_time);
     fNComment.value = e.n_comment; fMemo.value = e.memo;
+    fUnion.checked = e.student_union;
     syncForm();
     setMsg(""); applyFormState(); setView("register"); (e.univ ? fUniv : fOrg).focus();
   }
@@ -404,7 +409,7 @@
                 vote_date: fVoteDate.value, vote_time: fVoteTime.value,
                 comment: fComment.value, reply: fReply.value,
                 n_vote_date: fNVoteDate.value, n_vote_time: fNVoteTime.value,
-                n_comment: fNComment.value };
+                n_comment: fNComment.value, student_union: fUnion.checked };
     var editing = state.editingId, q;
     if (editing) {
       row.updated_at = new Date().toISOString();
@@ -488,6 +493,12 @@
     $("dupHint").hidden = !n;
     $("dupHint").textContent = n ? "注意：この大学はすでに " + n + " 件登録されています。" : "";
   }
+  // 学生連合にチェックした登録が（この入力を含めて）2件以上になるときに警告する
+  function showUnionHint() {
+    var others = state.entries.filter(function (e) { return e.id !== state.editingId && e.student_union; }).length;
+    $("unionHint").hidden = !(fUnion.checked && others + 1 >= 2);
+  }
+  fUnion.addEventListener("change", showUnionHint);
   fUniv.addEventListener("input", showDupHint);
   fUniv.addEventListener("change", function () {
     var hit = sameUniv()[0];

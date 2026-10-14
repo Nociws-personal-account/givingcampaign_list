@@ -199,6 +199,8 @@ td.t-voted input { width: 18px; height: 18px; margin: 2px 0 0; cursor: pointer; 
         <label for="fOrg">団体名
           <input id="fOrg" maxlength="100" placeholder="例：Nociws">
         </label>
+        <label class="check" for="fUnion"><input id="fUnion" type="checkbox">学生連合</label>
+        <p class="msg err" id="unionHint" hidden>学生連合は既に登録されています</p>
         <label for="fPref">都道府県
           <select id="fPref"></select>
         </label>
@@ -297,7 +299,7 @@ td.t-voted input { width: 18px; height: 18px; margin: 2px 0 0; cursor: pointer; 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=20261013"></script>
-<script src="app.js?v=20261013"></script>
+<script src="config.js?v=20261014"></script>
+<script src="app.js?v=20261014"></script>
 </body>
 </html>
